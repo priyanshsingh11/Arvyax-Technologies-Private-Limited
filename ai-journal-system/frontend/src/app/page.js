@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import JournalForm from "../components/JournalForm";
 import EntryList from "../components/EntryList";
@@ -14,7 +14,6 @@ export default function App() {
     const [insights, setInsights] = useState(null);
     const [insightsLoading, setInsightsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState("journal");
-    const appSectionRef = useRef(null);
 
     const fetchEntries = useCallback(async () => {
         try {
@@ -42,82 +41,80 @@ export default function App() {
         fetchInsights();
     }, [fetchEntries, fetchInsights]);
 
-    const scrollToApp = () => {
-        appSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-
     return (
         <div className="app">
-            {/* ── Navigation ── */}
             <header className="header">
                 <div className="header-inner">
                     <div className="logo">
-                        <h1 className="logo-title">Arvyax Technologies Private Limited</h1>
+                        <h1 className="logo-title">Arvyax NatureJournal</h1>
                     </div>
-                    <nav className="nav-links">
-                        <a href="#" className="nav-link">Home</a>
-                        <a href="#app-section" className="nav-link" onClick={(e) => { e.preventDefault(); scrollToApp(); setActiveTab('journal'); }}>Journal</a>
-                        <a href="#app-section" className="nav-link" onClick={(e) => { e.preventDefault(); scrollToApp(); setActiveTab('insights'); }}>Insights</a>
-                        <button className="btn-get-started" onClick={scrollToApp}>Get Started</button>
-                    </nav>
+                    <div className="user-control">
+                        <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginRight: "0.5rem" }}>User:</span>
+                        <input
+                            value={userId}
+                            onChange={(e) => setUserId(e.target.value)}
+                            style={{ padding: "0.3rem", borderRadius: "8px", border: "1px solid var(--border)", background: "rgba(255,255,255,0.5)" }}
+                        />
+                    </div>
                 </div>
             </header>
 
-            {/* ── Hero Section ── */}
-            <section className="hero">
-                <div className="hero-content">
-                    <h2 className="hero-title">
-                        AI-Powered
-                        <span>Mental Wellness</span>
-                    </h2>
-                    <p className="hero-subtitle">Reflect, relax, and grow with nature.</p>
-                    <button className="btn-hero" onClick={scrollToApp}>Start Journaling</button>
-                </div>
-            </section>
+            <div className="dashboard-header">
+                <h2 className="dashboard-title">
+                    AI-Powered
+                    <span>Mental Wellness</span>
+                </h2>
+                <p className="dashboard-subtitle">Your personal space for reflection and growth, powered by intelligence.</p>
+            </div>
 
-            {/* ── Features Section ── */}
-            <section className="features">
-                <div className="feature-card">
-                    <span className="feature-icon">📖</span>
-                    <h3 className="feature-title">Guided Journaling</h3>
-                    <p className="text-muted">Unload your thoughts in a focused environment.</p>
-                </div>
-                <div className="feature-card">
-                    <span className="feature-icon">🧠</span>
-                    <h3 className="feature-title">Mood Insights</h3>
-                    <p className="text-muted">Understand your emotional patterns using AI.</p>
-                </div>
-                <div className="feature-card">
-                    <span className="feature-icon">🌿</span>
-                    <h3 className="feature-title">Nature Meditations</h3>
-                    <p className="text-muted">Connect with immersive natural ambiences.</p>
-                </div>
-            </section>
+            <main className="main">
+                <aside className="sidebar">
+                    <div className="card" style={{ padding: "1.5rem" }}>
+                        <nav className="tab-nav">
+                            <button
+                                className={`tab-btn ${activeTab === "journal" ? "active" : ""}`}
+                                onClick={() => setActiveTab("journal")}
+                            >
+                                📝 New Entry
+                            </button>
+                            <button
+                                className={`tab-btn ${activeTab === "entries" ? "active" : ""}`}
+                                onClick={() => { setActiveTab("entries"); fetchEntries(); }}
+                            >
+                                📚 History ({entries.length})
+                            </button>
+                            <button
+                                className={`tab-btn ${activeTab === "insights" ? "active" : ""}`}
+                                onClick={() => { setActiveTab("insights"); fetchInsights(); }}
+                            >
+                                📊 Insights
+                            </button>
+                        </nav>
+                    </div>
 
-            {/* ── App Content ── */}
-            <main id="app-section" ref={appSectionRef} className="main">
-                <div className="tab-nav">
-                    <button
-                        className={`tab-btn ${activeTab === "journal" ? "active" : ""}`}
-                        onClick={() => setActiveTab("journal")}
-                    >
-                        📝 Write
-                    </button>
-                    <button
-                        className={`tab-btn ${activeTab === "entries" ? "active" : ""}`}
-                        onClick={() => { setActiveTab("entries"); fetchEntries(); }}
-                    >
-                        📚 My History ({entries.length})
-                    </button>
-                    <button
-                        className={`tab-btn ${activeTab === "insights" ? "active" : ""}`}
-                        onClick={() => { setActiveTab("insights"); fetchInsights(); }}
-                    >
-                        📊 Insights
-                    </button>
-                </div>
+                    <div className="sidebar-features">
+                        <div className="compact-feature" style={{ marginBottom: "1rem" }}>
+                            <span className="compact-feature-icon">📖</span>
+                            <div>
+                                <p className="compact-feature-title">Guided Journaling</p>
+                            </div>
+                        </div>
+                        <div className="compact-feature" style={{ marginBottom: "1rem" }}>
+                            <span className="compact-feature-icon">🧠</span>
+                            <div>
+                                <p className="compact-feature-title">Mood Insights</p>
+                            </div>
+                        </div>
+                        <div className="compact-feature">
+                            <span className="compact-feature-icon">🌿</span>
+                            <div>
+                                <p className="compact-feature-title">Nature Meditations</p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
 
-                <div className="app-container">
+                <section className="dashboard-content">
                     {activeTab === "journal" && (
                         <JournalForm
                             userId={userId}
@@ -142,7 +139,7 @@ export default function App() {
                     {activeTab === "insights" && (
                         <Insights data={insights} loading={insightsLoading} />
                     )}
-                </div>
+                </section>
             </main>
 
             <footer className="footer">

@@ -38,69 +38,63 @@ export default function EntryList({ entries, onAnalyzed }) {
 
     if (!entries || entries.length === 0) {
         return (
-            <div className="card">
-                <h2 className="card-title">📚 Previous Entries</h2>
-                <p className="empty-state">No entries yet. Create your first journal entry above!</p>
-            </div>
+            <div className="empty-state">No entries yet. Create your first journal entry!</div>
         );
     }
 
     return (
-        <div className="card">
-            <h2 className="card-title">📚 Previous Entries ({entries.length})</h2>
-            <div className="entry-list">
-                {entries.map((entry) => {
-                    const analysisResult = analysis[entry.id];
-                    const savedEmotion = entry.emotion || (analysisResult && analysisResult.emotion);
-                    const savedSummary = entry.summary || (analysisResult && analysisResult.summary);
-                    const kwSource = entry.keywords || analysisResult?.keywords;
-                    const savedKeywords = kwSource
-                        ? (Array.isArray(kwSource) ? kwSource : kwSource.split(",").map((k) => k.trim()))
-                        : [];
+        <div className="entry-list">
+            {entries.map((entry) => {
+                const analysisResult = analysis[entry.id];
+                const savedEmotion = entry.emotion || (analysisResult && analysisResult.emotion);
+                const savedSummary = entry.summary || (analysisResult && analysisResult.summary);
+                const kwSource = entry.keywords || analysisResult?.keywords;
+                const savedKeywords = kwSource
+                    ? (Array.isArray(kwSource) ? kwSource : kwSource.split(",").map((k) => k.trim()))
+                    : [];
 
-                    return (
-                        <div key={entry.id} className="entry-card">
-                            <div className="entry-header">
-                                <div className="entry-meta">
-                                    <span className="entry-ambience">
-                                        {ambienceEmoji[entry.ambience] || "🌿"}{" "}
-                                        {entry.ambience.charAt(0).toUpperCase() + entry.ambience.slice(1)}
-                                    </span>
-                                    <span className="entry-date">{formatDate(entry.created_at)}</span>
-                                </div>
-                                {savedEmotion && (
-                                    <span className="emotion-badge">{savedEmotion}</span>
+                return (
+                    <div key={entry.id} className="entry-card">
+                        <div className="entry-header">
+                            <div className="entry-meta">
+                                <span className="entry-ambience">
+                                    {ambienceEmoji[entry.ambience] || "🌿"}{" "}
+                                    {entry.ambience.charAt(0).toUpperCase() + entry.ambience.slice(1)}
+                                </span>
+                                <span className="entry-date">{formatDate(entry.created_at)}</span>
+                            </div>
+                            {savedEmotion && (
+                                <span className="emotion-badge">{savedEmotion}</span>
+                            )}
+                        </div>
+
+                        <p className="entry-text">{entry.text}</p>
+
+                        {savedSummary && (
+                            <div className="analysis-block">
+                                <p className="analysis-summary">💡 {savedSummary}</p>
+                                {savedKeywords.length > 0 && (
+                                    <div className="keywords">
+                                        {savedKeywords.map((kw) => (
+                                            <span key={kw} className="keyword-chip">
+                                                {kw}
+                                            </span>
+                                        ))}
+                                    </div>
                                 )}
                             </div>
+                        )}
 
-                            <p className="entry-text">{entry.text}</p>
-
-                            {savedSummary && (
-                                <div className="analysis-block">
-                                    <p className="analysis-summary">💡 {savedSummary}</p>
-                                    {savedKeywords.length > 0 && (
-                                        <div className="keywords">
-                                            {savedKeywords.map((kw) => (
-                                                <span key={kw} className="keyword-chip">
-                                                    {kw}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={() => handleAnalyze(entry)}
-                                disabled={loadingId === entry.id}
-                            >
-                                {loadingId === entry.id ? "Analyzing..." : "🔮 Analyze"}
-                            </button>
-                        </div>
-                    );
-                })}
-            </div>
+                        <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleAnalyze(entry)}
+                            disabled={loadingId === entry.id}
+                        >
+                            {loadingId === entry.id ? "Analyzing..." : "🔮 Analyze"}
+                        </button>
+                    </div>
+                );
+            })}
         </div>
     );
 }
