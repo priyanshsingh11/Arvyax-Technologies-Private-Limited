@@ -53,10 +53,10 @@ export default function EntryList({ entries, onAnalyzed }) {
                     const analysisResult = analysis[entry.id];
                     const savedEmotion = entry.emotion || (analysisResult && analysisResult.emotion);
                     const savedSummary = entry.summary || (analysisResult && analysisResult.summary);
-                    const savedKeywords =
-                        entry.keywords
-                            ? entry.keywords.split(",").map((k) => k.trim())
-                            : analysisResult?.keywords || [];
+                    const kwSource = entry.keywords || analysisResult?.keywords;
+                    const savedKeywords = kwSource
+                        ? (Array.isArray(kwSource) ? kwSource : kwSource.split(",").map((k) => k.trim()))
+                        : [];
 
                     return (
                         <div key={entry.id} className="entry-card">
