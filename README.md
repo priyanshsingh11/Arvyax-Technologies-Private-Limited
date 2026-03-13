@@ -1,6 +1,6 @@
 # 🌿 AI-Assisted Journal System
 
-An AI-powered journaling platform for nature session participants. After each immersive session (forest, ocean, or mountain), users write a journal entry describing how they feel. The system stores entries, analyzes emotions using **Groq LLaMA-3**, and surfaces mental-health insights over time.
+An AI-powered journaling platform for nature session participants. After each immersive session (forest, ocean, or mountain), users write a journal entry describing how they feel. The system stores entries, analyzes emotions using **Groq LLaMA-3.1**, and surfaces mental-health insights over time.
 
 ---
 
@@ -10,8 +10,54 @@ An AI-powered journaling platform for nature session participants. After each im
 |-----------|-------------------------------|
 | Backend   | Python · FastAPI               |
 | Database  | SQLite · SQLAlchemy ORM        |
-| LLM       | Groq API · LLaMA 3 (8B)       |
+| LLM       | Groq API · LLaMA 3.1 (8B)     |
 | Frontend  | React · Next.js 14             |
+
+---
+
+## System Design & Architecture
+
+The system follows a modern decoupled architecture, ensuring separation of concerns between the user interface, the API layer, and the intelligence engine.
+
+### High-Level Data Flow
+
+```mermaid
+graph LR
+    User([User]) --> Frontend[Next.js Frontend]
+    Frontend --> API[FastAPI Backend]
+    API --> DB[(SQLite DB)]
+    API --> LLM[Groq LLaMA 3.1]
+    LLM -- JSON --> API
+    API -- Entries/Insights --> Frontend
+```
+
+### 1. Frontend Layer (Next.js 14)
+- **Component-Driven UI**: Built with reusable React components (`JournalForm`, `EntryList`, `Insights`).
+- **Interactive States**: Uses React `useState` and `useEffect` for real-time updates without page reloads.
+- **Tabbed Navigation**: Seamless switching between writing, viewing history, and analyzing metrics.
+- **Axios Integration**: Robust HTTP client for parallel fetching of entries and aggregated insights.
+
+### 2. Backend Layer (FastAPI)
+- **Asynchronous Ready**: High-performance Python API designed for concurrency.
+- **Dependency Injection**: Uses `get_db` generator to manage database sessions efficiently, ensuring connections are closed after every request.
+- **Type Safety**: Leveraging Pydantic (v2) for strict request validation and response serialization.
+- **Router Logic**: Clean separation between standard CRUD (create/get) and computational logic (insights/LLM).
+
+### 3. Database Layer (SQLAlchemy + SQLite)
+- **Relational Schema**: A dedicated `JournalEntry` table stores the core data.
+- **Persistent Analysis**: Unlike many "chat" systems, this system persists LLM results (`emotion`, `keywords`, `summary`) directly back to the database row to prevent redundant (and costly) API calls.
+- **Indexing**: `userId` is indexed for sub-millisecond lookups as the journal grows.
+
+### 4. Intelligence Layer (Groq + LLaMA-3.1-8B)
+- **High-Speed Inference**: Powered by Groq’s LPU (Language Processing Unit), resulting in near-instant emotion analysis.
+- **Structured Output**: The system uses specialized prompt engineering to force the LLM to return valid JSON, which is then parsed into the backend's Pydantic models.
+- **Robustness**: The pipeline includes regex-based JSON extraction to handle any accidental conversational "chatter" from the LLM.
+
+### 5. Insight Engine
+- **Aggregation Logic**: A specialized `insights.py` module that performs on-the-fly computation of:
+    - User's most frequent emotional state.
+    - Most visited nature environment (Favourite Ambience).
+    - Longitudinal keyword analysis across recent sessions.
 
 ---
 
@@ -26,6 +72,7 @@ ai-journal-system/
 │   ├── schemas.py       # Pydantic request/response schemas
 │   ├── llm.py           # Groq LLaMA-3 integration
 │   ├── insights.py      # Aggregation logic
+│   ├── .env             # Groq API Key storage
 │   └── requirements.txt
 ├── frontend/
 │   ├── package.json
@@ -38,7 +85,6 @@ ai-journal-system/
 │           ├── JournalForm.js # Write & submit entries
 │           ├── EntryList.js   # View & analyze entries
 │           └── Insights.js    # Aggregated stats
-├── README.md
 └── ARCHITECTURE.md
 ```
 
@@ -48,7 +94,7 @@ ai-journal-system/
 
 - **Python 3.10+**
 - **Node.js 18+** and npm
-- A free **[Groq API key](https://console.groq.com/)** (model: `llama3-8b-8192`)
+- A free **[Groq API key](https://console.groq.com/)** (model: `llama-3.1-8b-instant`)
 
 ---
 
@@ -65,27 +111,19 @@ cd ai-journal-system
 ```bash
 cd backend
 
-# Create and activate a virtual environment (recommended)
+# Create and activate a virtual environment
 python -m venv venv
-# Windows:
 venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Set your Groq API key
-set GROQ_API_KEY=gsk_your_key_here       # Windows CMD
-$env:GROQ_API_KEY="gsk_your_key_here"   # Windows PowerShell
-export GROQ_API_KEY=gsk_your_key_here   # macOS/Linux
 
 # Run the server
 uvicorn main:app --reload --port 8000
 ```
 
-The backend will be available at **http://localhost:8000**.  
-Interactive API docs: **http://localhost:8000/docs**
+> [!NOTE]
+> The Groq API key is already configured in `backend/.env`.
 
 ### 3. Frontend
 
@@ -104,100 +142,14 @@ The frontend will be available at **http://localhost:3000**.
 ## API Reference
 
 ### `POST /api/journal` — Create Entry
-
-**Request:**
-```json
-{
-  "userId": "user-001",
-  "ambience": "forest",
-  "text": "I felt calm today after listening to the rain."
-}
-```
-
-**Response `201`:**
-```json
-{
-  "id": 1,
-  "userId": "user-001",
-  "ambience": "forest",
-  "text": "I felt calm today after listening to the rain.",
-  "emotion": null,
-  "keywords": null,
-  "summary": null,
-  "created_at": "2024-06-01T10:30:00"
-}
-```
-
----
-
 ### `GET /api/journal/{userId}` — Get User Entries
-
-**Example:** `GET /api/journal/user-001`
-
-Returns an array of all entries for the user, most recent first.
-
----
-
 ### `POST /api/journal/analyze` — Analyze Text (LLM)
-
-Calls **Groq LLaMA-3** to analyze the emotional tone. Does **not** save results.
-
-**Request:**
-```json
-{
-  "text": "I felt calm today after listening to the rain"
-}
-```
-
-**Response:**
-```json
-{
-  "emotion": "calm",
-  "keywords": ["rain", "nature", "peace"],
-  "summary": "User experienced relaxation during the forest session"
-}
-```
-
----
-
-### `POST /api/journal/{entryId}/analyze` — Analyze & Save
-
-Runs LLM analysis on an existing entry and **persists** the results to the database.
-
-**Example:** `POST /api/journal/1/analyze`
-
-Returns the updated `JournalEntry` object.
-
----
-
 ### `GET /api/journal/insights/{userId}` — Insights
-
-**Example:** `GET /api/journal/insights/user-001`
-
-**Response:**
-```json
-{
-  "totalEntries": 8,
-  "topEmotion": "calm",
-  "mostUsedAmbience": "forest",
-  "recentKeywords": ["focus", "nature", "rain", "peace"]
-}
-```
 
 ---
 
 ## LLM Details
 
 - **Provider:** [Groq](https://groq.com/)
-- **Model:** `llama3-8b-8192` (LLaMA 3 8B)
-- **Purpose:** Emotion detection, keyword extraction, and one-sentence summary of each journal entry
-- **Key required:** Set `GROQ_API_KEY` environment variable before starting the backend
-
----
-
-## Environment Variables
-
-| Variable            | Where     | Description                |
-|---------------------|-----------|----------------------------|
-| `GROQ_API_KEY`      | Backend   | Your Groq API key          |
-| `NEXT_PUBLIC_API_URL` | Frontend | Backend URL (default: `http://localhost:8000`) |
+- **Model:** `llama-3.1-8b-instant` (LLaMA 3.1 8B)
+- **Purpose:** Emotion detection and mental state summary.
