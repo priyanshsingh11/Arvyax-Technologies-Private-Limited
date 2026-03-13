@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import JournalForm from "../components/JournalForm";
 import EntryList from "../components/EntryList";
@@ -10,11 +10,11 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function App() {
     const [userId, setUserId] = useState("user-001");
-    const [inputUserId, setInputUserId] = useState("user-001");
     const [entries, setEntries] = useState([]);
     const [insights, setInsights] = useState(null);
     const [insightsLoading, setInsightsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState("journal");
+    const appSectionRef = useRef(null);
 
     const fetchEntries = useCallback(async () => {
         try {
@@ -42,93 +42,112 @@ export default function App() {
         fetchInsights();
     }, [fetchEntries, fetchInsights]);
 
-    const handleUserChange = (e) => {
-        e.preventDefault();
-        setUserId(inputUserId.trim() || "user-001");
+    const scrollToApp = () => {
+        appSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
     return (
         <div className="app">
-            {/* ── Header ── */}
+            {/* ── Navigation ── */}
             <header className="header">
                 <div className="header-inner">
                     <div className="logo">
-                        <span className="logo-icon">🌿</span>
-                        <div>
-                            <h1 className="logo-title">NatureJournal</h1>
-                            <p className="logo-subtitle">AI-Powered Mental Wellness</p>
-                        </div>
+                        <h1 className="logo-title">Arvyax Technologies Private Limited</h1>
                     </div>
-
-                    <form className="user-switcher" onSubmit={handleUserChange}>
-                        <label className="user-label">User ID</label>
-                        <input
-                            className="user-input"
-                            value={inputUserId}
-                            onChange={(e) => setInputUserId(e.target.value)}
-                            placeholder="e.g. user-001"
-                        />
-                        <button type="submit" className="btn btn-ghost btn-sm">
-                            Switch
-                        </button>
-                    </form>
+                    <nav className="nav-links">
+                        <a href="#" className="nav-link">Home</a>
+                        <a href="#app-section" className="nav-link" onClick={(e) => { e.preventDefault(); scrollToApp(); setActiveTab('journal'); }}>Journal</a>
+                        <a href="#app-section" className="nav-link" onClick={(e) => { e.preventDefault(); scrollToApp(); setActiveTab('insights'); }}>Insights</a>
+                        <button className="btn-get-started" onClick={scrollToApp}>Get Started</button>
+                    </nav>
                 </div>
             </header>
 
-            {/* ── Tab Navigation ── */}
-            <nav className="tab-nav">
-                <div className="tab-nav-inner">
-                    {[
-                        { id: "journal", label: "📝 Journal" },
-                        { id: "entries", label: `📚 Entries (${entries.length})` },
-                        { id: "insights", label: "📊 Insights" },
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            className={`tab-btn ${activeTab === tab.id ? "active" : ""}`}
-                            onClick={() => {
-                                setActiveTab(tab.id);
-                                if (tab.id === "insights") fetchInsights();
-                                if (tab.id === "entries") fetchEntries();
-                            }}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
+            {/* ── Hero Section ── */}
+            <section className="hero">
+                <div className="hero-content">
+                    <h2 className="hero-title">
+                        AI-Powered
+                        <span>Mental Wellness</span>
+                    </h2>
+                    <p className="hero-subtitle">Reflect, relax, and grow with nature.</p>
+                    <button className="btn-hero" onClick={scrollToApp}>Start Journaling</button>
                 </div>
-            </nav>
+            </section>
 
-            {/* ── Content ── */}
-            <main className="main">
-                {activeTab === "journal" && (
-                    <JournalForm
-                        userId={userId}
-                        onEntryCreated={() => {
-                            fetchEntries();
-                            fetchInsights();
-                        }}
-                    />
-                )}
+            {/* ── Features Section ── */}
+            <section className="features">
+                <div className="feature-card">
+                    <span className="feature-icon">📖</span>
+                    <h3 className="feature-title">Guided Journaling</h3>
+                    <p className="text-muted">Unload your thoughts in a focused environment.</p>
+                </div>
+                <div className="feature-card">
+                    <span className="feature-icon">🧠</span>
+                    <h3 className="feature-title">Mood Insights</h3>
+                    <p className="text-muted">Understand your emotional patterns using AI.</p>
+                </div>
+                <div className="feature-card">
+                    <span className="feature-icon">🌿</span>
+                    <h3 className="feature-title">Nature Meditations</h3>
+                    <p className="text-muted">Connect with immersive natural ambiences.</p>
+                </div>
+            </section>
 
-                {activeTab === "entries" && (
-                    <EntryList
-                        entries={entries}
-                        onAnalyzed={() => {
-                            fetchEntries();
-                            fetchInsights();
-                        }}
-                    />
-                )}
+            {/* ── App Content ── */}
+            <main id="app-section" ref={appSectionRef} className="main">
+                <div className="tab-nav">
+                    <button
+                        className={`tab-btn ${activeTab === "journal" ? "active" : ""}`}
+                        onClick={() => setActiveTab("journal")}
+                    >
+                        📝 Write
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === "entries" ? "active" : ""}`}
+                        onClick={() => { setActiveTab("entries"); fetchEntries(); }}
+                    >
+                        📚 My History ({entries.length})
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === "insights" ? "active" : ""}`}
+                        onClick={() => { setActiveTab("insights"); fetchInsights(); }}
+                    >
+                        📊 Insights
+                    </button>
+                </div>
 
-                {activeTab === "insights" && (
-                    <Insights data={insights} loading={insightsLoading} />
-                )}
+                <div className="app-container">
+                    {activeTab === "journal" && (
+                        <JournalForm
+                            userId={userId}
+                            onEntryCreated={() => {
+                                fetchEntries();
+                                fetchInsights();
+                                setActiveTab("entries");
+                            }}
+                        />
+                    )}
+
+                    {activeTab === "entries" && (
+                        <EntryList
+                            entries={entries}
+                            onAnalyzed={() => {
+                                fetchEntries();
+                                fetchInsights();
+                            }}
+                        />
+                    )}
+
+                    {activeTab === "insights" && (
+                        <Insights data={insights} loading={insightsLoading} />
+                    )}
+                </div>
             </main>
 
             <footer className="footer">
                 <p>
-                    Powered by{" "}
-                    <span className="accent">Groq LLaMA-3</span> · Built with FastAPI &amp; Next.js
+                    Powered by <span className="accent">Groq LLaMA-3.1</span> · Built with FastAPI & Next.js
                 </p>
             </footer>
         </div>
