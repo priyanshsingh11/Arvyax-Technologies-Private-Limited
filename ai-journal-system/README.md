@@ -15,6 +15,52 @@ An AI-powered journaling platform for nature session participants. After each im
 
 ---
 
+## System Design & Architecture
+
+The system follows a modern decoupled architecture, ensuring separation of concerns between the user interface, the API layer, and the intelligence engine.
+
+### High-Level Data Flow
+
+```mermaid
+graph LR
+    User([User]) --> Frontend[Next.js Frontend]
+    Frontend --> API[FastAPI Backend]
+    API --> DB[(SQLite DB)]
+    API --> LLM[Groq LLaMA 3.1]
+    LLM -- JSON --> API
+    API -- Entries/Insights --> Frontend
+```
+
+### 1. Frontend Layer (Next.js 14)
+- **Component-Driven UI**: Built with reusable React components (`JournalForm`, `EntryList`, `Insights`).
+- **Interactive States**: Uses React `useState` and `useEffect` for real-time updates without page reloads.
+- **Tabbed Navigation**: Seamless switching between writing, viewing history, and analyzing metrics.
+- **Axios Integration**: Robust HTTP client for parallel fetching of entries and aggregated insights.
+
+### 2. Backend Layer (FastAPI)
+- **Asynchronous Ready**: High-performance Python API designed for concurrency.
+- **Dependency Injection**: Uses `get_db` generator to manage database sessions efficiently, ensuring connections are closed after every request.
+- **Type Safety**: Leveraging Pydantic (v2) for strict request validation and response serialization.
+- **Router Logic**: Clean separation between standard CRUD (create/get) and computational logic (insights/LLM).
+
+### 3. Database Layer (SQLAlchemy + SQLite)
+- **Relational Schema**: A dedicated `JournalEntry` table stores the core data.
+- **Persistent Analysis**: Unlike many "chat" systems, this system persists LLM results (`emotion`, `keywords`, `summary`) directly back to the database row to prevent redundant (and costly) API calls.
+- **Indexing**: `userId` is indexed for sub-millisecond lookups as the journal grows.
+
+### 4. Intelligence Layer (Groq + LLaMA-3.1-8B)
+- **High-Speed Inference**: Powered by Groq’s LPU (Language Processing Unit), resulting in near-instant emotion analysis.
+- **Structured Output**: The system uses specialized prompt engineering to force the LLM to return valid JSON, which is then parsed into the backend's Pydantic models.
+- **Robustness**: The pipeline includes regex-based JSON extraction to handle any accidental conversational "chatter" from the LLM.
+
+### 5. Insight Engine
+- **Aggregation Logic**: A specialized `insights.py` module that performs on-the-fly computation of:
+    - User's most frequent emotional state.
+    - Most visited nature environment (Favourite Ambience).
+    - Longitudinal keyword analysis across recent sessions.
+
+---
+
 ## Project Structure
 
 ```
