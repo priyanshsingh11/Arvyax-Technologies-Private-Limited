@@ -1,5 +1,7 @@
 # 🌿 AI-Assisted Journal System
 
+Live Link - https://arvyax-technologies-private-limited-omega.vercel.app/
+
 An AI-powered journaling platform for nature session participants. After each immersive session (forest, ocean, or mountain), users write a journal entry describing how they feel. The system stores entries, analyzes emotions using **Groq LLaMA-3.1**, and surfaces mental-health insights over time.
 
 ---
